@@ -3,7 +3,7 @@ import time
 import argparse
 from typing import List, Union
 
-class LinearCongruentRandomGenerator:
+class RandomGenerator:
     """
     Utility class for generating pseudo-random numbers using the Linear Congruent Method (LCM).
     """
