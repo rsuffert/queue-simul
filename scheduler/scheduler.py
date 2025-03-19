@@ -1,6 +1,6 @@
 from enum import Enum
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Union
 import heapq
 
 class EventType(Enum):
@@ -12,7 +12,6 @@ class EventType(Enum):
     DEPARTURE = 2
 
 @dataclass(order=True)
-
 class Event:
     """
     Represents an event in the simulation with a specific time and type.
@@ -22,7 +21,7 @@ class Event:
         type (EventType): The type of the event, represented as an instance of the EventType enumeration.
     """
     time: float
-    type: EventType
+    type: EventType = field(compare=False)
 
 class Scheduler:
     """
@@ -52,7 +51,7 @@ class Scheduler:
         if not isinstance(event, Event): raise TypeError("event must be an instance of Event.")
         heapq.heappush(self.events, event)
     
-    def get_next(self) -> Event:
+    def get_next(self) -> Union[Event, None]:
         """
         Retrieve and remove the next scheduled event from the priority queue.
 
