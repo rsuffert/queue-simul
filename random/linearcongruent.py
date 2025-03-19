@@ -58,6 +58,20 @@ class RandomGenerator:
         normalized: float = generated / self.M
         self.history[-1] = normalized
         return normalized
+
+    def next_in_range(self, min: float, max: float) -> float:
+        """
+        Description: Generates the next random number in the range [min, max).
+        Params:
+            min (float): The lower bound of the range.
+            max (float): The upper bound of the range.
+        Returns:
+            float: The next random number in the provided range.
+        """
+        normalized: float = self.next_normalized()
+        ranged: float = min + ((max-min) * normalized)
+        self.history[-1] = ranged
+        return ranged
     
     def plot_all(self):
         """
