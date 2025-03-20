@@ -1,6 +1,7 @@
 from rand.linearcongruent import RandomGenerator
 from scheduler import Scheduler, Event, EventType
 from typing import List
+from tabulate import tabulate
 
 # Algorithm parameters (do not modify during run time!)
 MAX_RANDOMS: int          = 100_000
@@ -36,9 +37,22 @@ def main():
         else:
             handle_departure(current_event)
 
-    print("States:", QUEUE_STATES)
-    print("Global time:", GLOBAL_TIME)
+    print_results()
 
+def print_results():
+    print("========================= SIMULATION RESULTS =========================\n")
+    headers = ["Queue Length", "Total Time", "Probability"]
+    data = []
+    for i in range(len(QUEUE_STATES)):
+        state = f"{i}"
+        time  = f"{QUEUE_STATES[i]:.2f}"
+        prob  = f"{(QUEUE_STATES[i] / GLOBAL_TIME)*100:.2f}%"
+        data.append([state, time, prob])
+    print(tabulate(data, headers=headers, tablefmt="pretty"))
+    print()
+    print(f"TOTAL SIMULATION TIME: {GLOBAL_TIME:.2f}")
+    print(f"TOTAL LOSSES: {N_LOSSES}")
+    print("\n=======================================================================")
 
 def handle_arrival(event: Event):
     global QUEUE_STATES, QUEUE_OCCUPIED, GLOBAL_TIME, QUEUE_CAPACITY, N_SERVERS, N_LOSSES
