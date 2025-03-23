@@ -19,14 +19,15 @@ QUEUE_OCCUPIED: int       = 0
 QUEUE_STATES: List[float] = [0.0] * (QUEUE_CAPACITY + 1)
 GLOBAL_TIME: float        = 0.0
 N_LOSSES: int             = 0
+REMAINING_RANDOMS: int    = MAX_RANDOMS
 rnd                       = RandomGenerator()
 scheduler                 = Scheduler()
 
 def main():
-    global scheduler, INITIAL_EVENT, MAX_RANDOMS, QUEUE_STATES
+    global scheduler, INITIAL_EVENT, QUEUE_STATES, REMAINING_RANDOMS
 
     scheduler.schedule(INITIAL_EVENT)
-    for _ in range(MAX_RANDOMS):
+    while REMAINING_RANDOMS > 0:
         current_event: Event = scheduler.get_next()
         if current_event == None:
             print("Out of events!")
@@ -57,7 +58,7 @@ def print_results():
 def handle_arrival(event: Event):
     global QUEUE_STATES, QUEUE_OCCUPIED, GLOBAL_TIME, QUEUE_CAPACITY, N_SERVERS, N_LOSSES
     global MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME, MIN_ARRIVAL_TIME, MAX_ARRIVAL_TIME
-    global scheduler, rnd
+    global scheduler, rnd, REMAINING_RANDOMS
 
     QUEUE_STATES[QUEUE_OCCUPIED] += event.time - GLOBAL_TIME
     GLOBAL_TIME = event.time
@@ -68,17 +69,19 @@ def handle_arrival(event: Event):
             departure_time: float = GLOBAL_TIME + rnd.next_in_range(MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME)
             departure: Event = Event(departure_time, EventType.DEPARTURE)
             scheduler.schedule(departure)
+            REMAINING_RANDOMS -= 1
     else:
         N_LOSSES += 1
     
     next_arrival_time: float = GLOBAL_TIME + rnd.next_in_range(MIN_ARRIVAL_TIME, MAX_ARRIVAL_TIME)
     next_arrival: Event = Event(next_arrival_time, EventType.ARRIVAL)
     scheduler.schedule(next_arrival)
+    REMAINING_RANDOMS -= 1
 
 def handle_departure(event: Event):
     global QUEUE_STATES, QUEUE_OCCUPIED, GLOBAL_TIME, N_SERVERS
     global MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME
-    global scheduler, rnd
+    global scheduler, rnd, REMAINING_RANDOMS
 
     QUEUE_STATES[QUEUE_OCCUPIED] += event.time - GLOBAL_TIME
     GLOBAL_TIME = event.time
@@ -89,6 +92,7 @@ def handle_departure(event: Event):
         next_up_departure_time: float = GLOBAL_TIME + rnd.next_in_range(MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME)
         next_up_departure: Event = Event(next_up_departure_time, EventType.DEPARTURE)
         scheduler.schedule(next_up_departure)
+        REMAINING_RANDOMS -= 1
 
 if __name__ == "__main__":
     main()
