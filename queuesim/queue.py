@@ -2,6 +2,7 @@ from typing import Tuple, List
 from rand.linearcongruent import RandomGenerator
 from scheduler import Scheduler, Event, EventType
 from tabulate import tabulate
+from pydantic import validate_call
 
 class Queue:
     """
@@ -23,6 +24,7 @@ class Queue:
         used_randoms (int): The number of random numbers used during the simulation.
     """
 
+    @validate_call
     def __init__(self, capacity: int, servers: int, arrival_interval: Tuple[float, float], departure_interval: Tuple[float, float], first_event: Event):
         """
         Initializes a Queue object with the specified parameters.
@@ -35,17 +37,8 @@ class Queue:
                 Must contain exactly two floats in increasing order.
             first_event (Event): The first event to be scheduled in the queue. Must be an arrival event.
         Raises:
-            TypeError: If any of the arguments are of an incorrect type.
             ValueError: If any of the arguments have invalid values (e.g., non-positive integers, invalid intervals).
         """
-        if not isinstance(capacity, int):       raise TypeError("capacity must be an integer number")
-        if not isinstance(servers, int):        raise TypeError("servers must be an integer number")
-        if not isinstance(first_event, Event):  raise TypeError("first_event must be an Event object")
-        if not isinstance(arrival_interval, tuple) or not all(isinstance(i, float) for i in arrival_interval):
-            raise TypeError("arrival_interval must be a tuple of floats")
-        if not isinstance(departure_interval, tuple) or not all(isinstance(i, float) for i in departure_interval):
-            raise TypeError("departure_interval must be a tuple of floats")
-
         if capacity <= 0:                                  raise ValueError("capacity must be positive")
         if servers <= 0:                                   raise ValueError("servers must be positive")
         if len(arrival_interval) != 2:                     raise ValueError("arrival_interval must have 2 elements")
@@ -69,6 +62,7 @@ class Queue:
         self.scheduler:          Scheduler       = Scheduler()
         self.scheduler.schedule(first_event)
     
+    @validate_call
     def handle_arrival(self, event: Event):
         """
         Handles the arrival of an event in the queue simulation.
@@ -79,7 +73,6 @@ class Queue:
             event (Event): The event object representing an arrival. Must be of type 
                            Event and have an EventType of ARRIVAL.
         Raises:
-            TypeError: If the provided event is not an instance of the Event class.
             ValueError: If the provided event is not of type ARRIVAL.
         Updates:
             - Updates the time spent in the current queue state.
@@ -91,7 +84,6 @@ class Queue:
             - Schedules the next arrival event.
             - Tracks the number of random numbers used for scheduling events.
         """
-        if not isinstance(event, Event):    raise TypeError("event must be an Event object")
         if event.type != EventType.ARRIVAL: raise ValueError("event must be an arrival event")
         
         self.queue_states[self.queue_occupied] += event.time - self.global_time
@@ -112,6 +104,7 @@ class Queue:
         self.scheduler.schedule(next_arrival)
         self.used_randoms += 1
     
+    @validate_call
     def handle_departure(self, event: Event):
         """
         Handles a departure event in the queue simulation.
@@ -141,7 +134,6 @@ class Queue:
             float within the specified range, and that `self.scheduler.schedule`
             schedules the provided event.
         """
-        if not isinstance(event, Event):      raise TypeError("event must be an Event object")
         if event.type != EventType.DEPARTURE: raise ValueError("event must be a departure event")
 
         self.queue_states[self.queue_occupied] += event.time - self.global_time
@@ -155,6 +147,7 @@ class Queue:
             self.scheduler.schedule(next_up_departure)
             self.used_randoms += 1
     
+    @validate_call
     def simulate(self, n_randoms: int):
         """
         Simulates the queue system by processing events until the specified number 
@@ -163,8 +156,7 @@ class Queue:
         Args:
             n_randoms (int): The number of random events to process.
         """
-        if not isinstance(n_randoms, int): raise TypeError("n_randoms must be an integer number")
-        if n_randoms <= 0:                 raise ValueError("n_randoms must be positive")
+        if n_randoms <= 0: raise ValueError("n_randoms must be positive")
 
         while self.used_randoms < n_randoms:
             current_event = self.scheduler.get_next()

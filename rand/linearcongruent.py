@@ -2,12 +2,14 @@ import matplotlib.pyplot as plt
 import time
 import argparse
 from typing import List, Union
+from pydantic import validate_call
 
 class RandomGenerator:
     """
     Utility class for generating pseudo-random numbers using the Linear Congruent Method (LCM).
     """
 
+    @validate_call
     def __init__(self, seed: Union[int, None] = None, M: int = 2**32, a: int = 1_664_525, c: int = 1_013_904_223):
         """
         Description: Constructor of the class. The default values for the M, a, and c parameters follow those
@@ -20,16 +22,9 @@ class RandomGenerator:
         """
         if seed is None: seed = time.time_ns() % M
 
-        if not isinstance(M, int): raise TypeError("M must be an integer.")
-        if not (M > 0):            raise ValueError("M must be greater than 0.")
-
-        if not isinstance(a, int): raise TypeError("a must be an integer.")
-        if not (0 < a and a < M):  raise ValueError("a must be in the range (0, M).")
-
-        if not isinstance(c, int): raise TypeError("c must be an integer.")
-        if not (0 <= c and c < M): raise ValueError("c must be in the range [0, M).")
-
-        if not isinstance(seed, int):    raise TypeError("seed must be an integer.")
+        if not (M > 0):                  raise ValueError("M must be greater than 0.")
+        if not (0 < a and a < M):        raise ValueError("a must be in the range (0, M).")
+        if not (0 <= c and c < M):       raise ValueError("c must be in the range [0, M).")
         if not (0 <= seed and seed < M): raise ValueError("seed must be in the range [0, M).")
 
         self.seed = seed
@@ -59,6 +54,7 @@ class RandomGenerator:
         self.history[-1] = normalized
         return normalized
 
+    @validate_call
     def next_in_range(self, min: float, max: float) -> float:
         """
         Description: Generates the next random number in the range [min, max).

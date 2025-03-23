@@ -2,6 +2,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Union
 import heapq
+from pydantic import validate_call
 
 class EventType(Enum):
     """
@@ -29,6 +30,7 @@ class Scheduler:
     Attributes:
         events (list): A list that holds the scheduled events in a priority queue.
     """
+
     def __init__(self):
         """
         Initializes the Scheduler instance.
@@ -38,17 +40,14 @@ class Scheduler:
         """
         self.events = []
     
-    def schedule(self, event):
+    @validate_call
+    def schedule(self, event: Event):
         """
         Schedules a new event by adding it to the priority queue.
 
         Args:
             event (Event): The event to be scheduled. Must be an instance of the Event class.
-
-        Raises:
-            TypeError: If the provided event is not an instance of the Event class.
         """
-        if not isinstance(event, Event): raise TypeError("event must be an instance of Event.")
         heapq.heappush(self.events, event)
     
     def get_next(self) -> Union[Event, None]:
