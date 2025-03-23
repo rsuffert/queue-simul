@@ -27,16 +27,10 @@ class Event:
 class Scheduler:
     """
     A class to manage and schedule events in a priority queue.
-    Attributes:
-        events (list): A list that holds the scheduled events in a priority queue.
     """
-
     def __init__(self):
         """
-        Initializes the Scheduler instance.
-
-        This constructor initializes an empty list to store events that will be
-        managed by the scheduler.
+        Constructor of the class.
         """
         self.events = []
     
@@ -44,19 +38,16 @@ class Scheduler:
     def schedule(self, event: Event):
         """
         Schedules a new event by adding it to the priority queue.
-
         Args:
-            event (Event): The event to be scheduled. Must be an instance of the Event class.
+            event (Event): The event to be scheduled.
         """
         heapq.heappush(self.events, event)
     
     def get_next(self) -> Union[Event, None]:
         """
         Retrieve and remove the next scheduled event from the priority queue.
-
         Returns:
-            Event: The next event in the priority queue based on its priority.
-                   Returns None if the queue is empty.
+            Union[Event, None]: The next event in the priority queue based on its priority, or None if the queue is empty.
         """
         if len(self.events) == 0: return None
         return heapq.heappop(self.events)
