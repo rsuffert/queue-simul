@@ -2,8 +2,10 @@ from queuesim import Queue
 from scheduler import Event, EventType
 import argparse
 import yaml
+import os
+from pydantic import validate_call
 
-DEFAULT_CONFIGS = {
+DEFAULT_CONFIGS: dict = {
     "queue": {
         "servers": 2,
         "capacity": 5,
@@ -19,25 +21,41 @@ DEFAULT_CONFIGS = {
         }
     }
 }
-DEFAULT_CONFIGS_FILENAME = "configs.yaml"
-
+DEFAULT_CONFIGS_FILENAME: str = "configs.yaml"
 
 def default_configs():
     with open(DEFAULT_CONFIGS_FILENAME, "w") as f:
         yaml.dump(DEFAULT_CONFIGS, f)
     print("Default configurations saved to configs.yaml")
 
+@validate_call
 def simulation(configs_filename: str):
+    if not os.path.exists(configs_filename): raise FileNotFoundError(f"File {configs_filename} not found")
+
     with open(configs_filename, "r") as f:
         configs = yaml.safe_load(f)
+
+    queue_configs = configs.get("queue", {})
+    sched_configs = configs.get("scheduler", {})
+
     q = Queue(
-        configs["queue"]["capacity"],
-        configs["queue"]["servers"],
-        (configs["queue"]["min_arrival_time"], configs["queue"]["max_arrival_time"]),
-        (configs["queue"]["min_departure_time"], configs["queue"]["max_departure_time"]),
-        Event(configs["scheduler"]["initial_arrival"]["time"], EventType.ARRIVAL)
+        queue_configs.get("capacity", DEFAULT_CONFIGS["queue"]["capacity"]),
+        queue_configs.get("servers", DEFAULT_CONFIGS["queue"]["servers"]),
+        (
+            queue_configs.get("min_arrival_time", DEFAULT_CONFIGS["queue"]["min_arrival_time"]),
+            queue_configs.get("max_arrival_time", DEFAULT_CONFIGS["queue"]["max_arrival_time"])
+        ),
+        (
+            queue_configs.get("min_departure_time", DEFAULT_CONFIGS["queue"]["min_departure_time"]),
+            queue_configs.get("max_departure_time", DEFAULT_CONFIGS["queue"]["max_departure_time"])
+        ),
+        Event(
+            sched_configs.get("initial_arrival", {}).get("time", DEFAULT_CONFIGS["scheduler"]["initial_arrival"]["time"]),
+            EventType.ARRIVAL
+        )
     )
-    q.simulate(configs["scheduler"]["max_randoms"])
+    q.simulate(sched_configs.get("max_randoms", DEFAULT_CONFIGS["scheduler"]["max_randoms"]))
+
     print(q)
 
 def main():
@@ -51,7 +69,6 @@ def main():
     
     if args.configs_path:
         simulation(args.configs_path)
-
 
 if __name__ == "__main__":
     main()
