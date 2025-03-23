@@ -15,19 +15,19 @@ MIN_DEPARTURE_TIME: float = 3.0
 MAX_DEPARTURE_TIME: float = 5.0
 
 # Algorithm state
-QUEUE_OCCUPIED: int       = 0
-QUEUE_STATES: List[float] = [0.0] * (QUEUE_CAPACITY + 1)
-GLOBAL_TIME: float        = 0.0
-N_LOSSES: int             = 0
-REMAINING_RANDOMS: int    = MAX_RANDOMS
+queue_occupied: int       = 0
+queue_states: List[float] = [0.0] * (QUEUE_CAPACITY + 1)
+global_time: float        = 0.0
+n_losses: int             = 0
+remaining_randoms: int    = MAX_RANDOMS
 rnd                       = RandomGenerator()
 scheduler                 = Scheduler()
 
 def main():
-    global scheduler, INITIAL_EVENT, QUEUE_STATES, REMAINING_RANDOMS
+    global scheduler, INITIAL_EVENT, queue_states, remaining_randoms
 
     scheduler.schedule(INITIAL_EVENT)
-    while REMAINING_RANDOMS > 0:
+    while remaining_randoms > 0:
         current_event: Event = scheduler.get_next()
         if current_event == None:
             print("Out of events!")
@@ -44,55 +44,55 @@ def print_results():
     print("========================= SIMULATION RESULTS =========================\n")
     headers = ["Queue Length", "Total Time", "Probability"]
     data = []
-    for i in range(len(QUEUE_STATES)):
+    for i in range(len(queue_states)):
         state = f"{i}"
-        time  = f"{QUEUE_STATES[i]:.2f}"
-        prob  = f"{(QUEUE_STATES[i] / GLOBAL_TIME)*100:.2f}%"
+        time  = f"{queue_states[i]:.2f}"
+        prob  = f"{(queue_states[i] / global_time)*100:.2f}%"
         data.append([state, time, prob])
     print(tabulate(data, headers=headers, tablefmt="pretty"))
     print()
-    print(f"TOTAL SIMULATION TIME: {GLOBAL_TIME:.2f}")
-    print(f"TOTAL LOSSES: {N_LOSSES}")
+    print(f"TOTAL SIMULATION TIME: {global_time:.2f}")
+    print(f"TOTAL LOSSES: {n_losses}")
     print("\n=======================================================================")
 
 def handle_arrival(event: Event):
-    global QUEUE_STATES, QUEUE_OCCUPIED, GLOBAL_TIME, QUEUE_CAPACITY, N_SERVERS, N_LOSSES
+    global queue_states, queue_occupied, global_time, QUEUE_CAPACITY, N_SERVERS, n_losses
     global MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME, MIN_ARRIVAL_TIME, MAX_ARRIVAL_TIME
-    global scheduler, rnd, REMAINING_RANDOMS
+    global scheduler, rnd, remaining_randoms
 
-    QUEUE_STATES[QUEUE_OCCUPIED] += event.time - GLOBAL_TIME
-    GLOBAL_TIME = event.time
+    queue_states[queue_occupied] += event.time - global_time
+    global_time = event.time
 
-    if QUEUE_OCCUPIED < QUEUE_CAPACITY:
-        QUEUE_OCCUPIED += 1
-        if QUEUE_OCCUPIED <= N_SERVERS:
-            departure_time: float = GLOBAL_TIME + rnd.next_in_range(MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME)
+    if queue_occupied < QUEUE_CAPACITY:
+        queue_occupied += 1
+        if queue_occupied <= N_SERVERS:
+            departure_time: float = global_time + rnd.next_in_range(MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME)
             departure: Event = Event(departure_time, EventType.DEPARTURE)
             scheduler.schedule(departure)
-            REMAINING_RANDOMS -= 1
+            remaining_randoms -= 1
     else:
-        N_LOSSES += 1
+        n_losses += 1
     
-    next_arrival_time: float = GLOBAL_TIME + rnd.next_in_range(MIN_ARRIVAL_TIME, MAX_ARRIVAL_TIME)
+    next_arrival_time: float = global_time + rnd.next_in_range(MIN_ARRIVAL_TIME, MAX_ARRIVAL_TIME)
     next_arrival: Event = Event(next_arrival_time, EventType.ARRIVAL)
     scheduler.schedule(next_arrival)
-    REMAINING_RANDOMS -= 1
+    remaining_randoms -= 1
 
 def handle_departure(event: Event):
-    global QUEUE_STATES, QUEUE_OCCUPIED, GLOBAL_TIME, N_SERVERS
+    global queue_states, queue_occupied, global_time, N_SERVERS
     global MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME
-    global scheduler, rnd, REMAINING_RANDOMS
+    global scheduler, rnd, remaining_randoms
 
-    QUEUE_STATES[QUEUE_OCCUPIED] += event.time - GLOBAL_TIME
-    GLOBAL_TIME = event.time
+    queue_states[queue_occupied] += event.time - global_time
+    global_time = event.time
 
-    QUEUE_OCCUPIED -= 1
+    queue_occupied -= 1
 
-    if QUEUE_OCCUPIED >= N_SERVERS:
-        next_up_departure_time: float = GLOBAL_TIME + rnd.next_in_range(MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME)
+    if queue_occupied >= N_SERVERS:
+        next_up_departure_time: float = global_time + rnd.next_in_range(MIN_DEPARTURE_TIME, MAX_DEPARTURE_TIME)
         next_up_departure: Event = Event(next_up_departure_time, EventType.DEPARTURE)
         scheduler.schedule(next_up_departure)
-        REMAINING_RANDOMS -= 1
+        remaining_randoms -= 1
 
 if __name__ == "__main__":
     main()
