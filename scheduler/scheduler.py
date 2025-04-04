@@ -9,8 +9,9 @@ class EventType(Enum):
     EventType is an enumeration that represents the types of events that can occur
     in a queue simulation.
     """
-    ARRIVAL = 1
+    ARRIVAL   = 1
     DEPARTURE = 2
+    PASSAGE   = 3
 
 @dataclass(order=True)
 class Event:
