@@ -10,7 +10,7 @@ import json
 from typing import List
 
 DEFAULT_CONFIGS: dict = {
-    "queue1": {
+    "queue0": {
         "servers": 2,
         "capacity": 3,
         "min_arrival_time": 1.0,
@@ -18,7 +18,7 @@ DEFAULT_CONFIGS: dict = {
         "min_departure_time": 3.0,
         "max_departure_time": 4.0
     },
-    "queue2": {
+    "queue1": {
         "servers": 1,
         "capacity": 5,
         "min_departure_time": 2.0,
@@ -60,7 +60,7 @@ def simulation(configs_filename: str):
     Args:
         configs_filename (str): The path to the YAML configuration file.
     """
-    global queues, sched
+    global queues, sched, used_randoms, global_time
 
     if not os.path.exists(configs_filename):
         logging.error(f"File {configs_filename} not found.")
@@ -71,31 +71,33 @@ def simulation(configs_filename: str):
     
     logging.debug(f"Loaded configs:\n{json.dumps(configs, indent=4)}")
 
+    queue0_configs    = configs.get("queue0", {})
     queue1_configs    = configs.get("queue1", {})
-    queue2_configs    = configs.get("queue2", {})
     sched_configs     = configs.get("scheduler", {})
     max_randoms       = configs.get("max_randoms", DEFAULT_CONFIGS["max_randoms"])
     init_arrival_time = sched_configs.get("initial_arrival_time", DEFAULT_CONFIGS["scheduler"]["init_arrival_time"])
 
     sched.schedule(Event(init_arrival_time, EventType.ARRIVAL))
 
+    q0 = Queue(
+        id=0,
+        capacity=queue0_configs.get("capacity", DEFAULT_CONFIGS["queue0"]["capacity"]),
+        servers=queue0_configs.get("servers", DEFAULT_CONFIGS["queue0"]["servers"]),
+        arrival_interval=(queue0_configs.get("min_arrival_time", DEFAULT_CONFIGS["queue0"]["min_arrival_time"]),
+                          queue0_configs.get("max_arrival_time", DEFAULT_CONFIGS["queue0"]["max_arrival_time"])),
+        departure_interval=(queue0_configs.get("min_departure_time", DEFAULT_CONFIGS["queue0"]["min_departure_time"]),
+                            queue0_configs.get("max_departure_time", DEFAULT_CONFIGS["queue0"]["max_departure_time"])),
+    )
     q1 = Queue(
+        id=1,
         capacity=queue1_configs.get("capacity", DEFAULT_CONFIGS["queue1"]["capacity"]),
         servers=queue1_configs.get("servers", DEFAULT_CONFIGS["queue1"]["servers"]),
-        arrival_interval=(queue1_configs.get("min_arrival_time", DEFAULT_CONFIGS["queue1"]["min_arrival_time"]),
-                          queue1_configs.get("max_arrival_time", DEFAULT_CONFIGS["queue1"]["max_arrival_time"])),
+        arrival_interval=(0.0, 0.0), # No external arrivals in queue2
         departure_interval=(queue1_configs.get("min_departure_time", DEFAULT_CONFIGS["queue1"]["min_departure_time"]),
                             queue1_configs.get("max_departure_time", DEFAULT_CONFIGS["queue1"]["max_departure_time"])),
     )
-    q2 = Queue(
-        capacity=queue2_configs.get("capacity", DEFAULT_CONFIGS["queue2"]["capacity"]),
-        servers=queue2_configs.get("servers", DEFAULT_CONFIGS["queue2"]["servers"]),
-        arrival_interval=(0.0, 0.0), # No external arrivals in queue2
-        departure_interval=(queue2_configs.get("min_departure_time", DEFAULT_CONFIGS["queue2"]["min_departure_time"]),
-                            queue2_configs.get("max_departure_time", DEFAULT_CONFIGS["queue2"]["max_departure_time"])),
-    )
+    queues.append(q0)
     queues.append(q1)
-    queues.append(q2)
 
     while used_randoms < max_randoms:
         current_event = sched.get_next()
@@ -107,9 +109,9 @@ def simulation(configs_filename: str):
             case EventType.PASSAGE:   passage(current_event)
             case EventType.DEPARTURE: departure(current_event)
     
+    q0.print(global_time)
     q1.print(global_time)
-    q2.print(global_time)
-    print(f"\nTOTAL SIMULATION TIME: {global_time:.2f}")
+    print(f"TOTAL SIMULATION TIME: {global_time:.2f}")
 
 @validate_call
 def accumulate_time(event: Event):
@@ -137,7 +139,6 @@ def departure(event: Event):
     if event.type != EventType.DEPARTURE: raise ValueError("event must be a departure event")
 
     accumulate_time(event)
-
     queues[1].queue_occupied -= 1
 
     if queues[1].queue_occupied >= queues[1].SERVERS:
@@ -191,7 +192,6 @@ def passage(event: Event):
     if event.type != EventType.PASSAGE: raise ValueError("event must be a passage event")
 
     accumulate_time(event)
-    
     queues[0].queue_occupied -= 1
 
     if queues[0].queue_occupied >= queues[0].SERVERS:
