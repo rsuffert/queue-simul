@@ -27,8 +27,8 @@ class Queue:
         if servers <= 0:                                   raise ValueError("servers must be positive")
         if len(arrival_interval) != 2:                     raise ValueError("arrival_interval must have 2 elements")
         if len(departure_interval) != 2:                   raise ValueError("departure_interval must have 2 elements")
-        if arrival_interval[0] > arrival_interval[1]:      raise ValueError("arrival_interval must be in increasing order")
-        if departure_interval[0] > departure_interval[1]:  raise ValueError("departure_interval must be in increasing order")
+        if arrival_interval[0] > arrival_interval[1]:      raise ValueError("arrival_interval must be in non-decreasing order")
+        if departure_interval[0] > departure_interval[1]:  raise ValueError("departure_interval must be in non-decreasing order")
         
         self.ID:                 int             = id
         self.CAPACITY:           int             = capacity

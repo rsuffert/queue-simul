@@ -101,7 +101,7 @@ def simulation(configs_filename: str):
 
     while used_randoms < max_randoms:
         current_event = sched.get_next()
-        if current_event == None:
+        if current_event is None:
             logging.warning("Out of events! Finishing simulation...")
             break
         match current_event.type:
