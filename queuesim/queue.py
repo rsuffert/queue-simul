@@ -8,12 +8,14 @@ class Queue:
     Queue class represents a simulation of a queueing system with a specified capacity, number of servers, 
     arrival and departure intervals, and an initial event.
     """
+    
+    _instances_counter: int = 0
+    
     @validate_call
-    def __init__(self, id: int, capacity: int, servers: int, arrival_interval: Tuple[float, float], departure_interval: Tuple[float, float]):
+    def __init__(self, capacity: int, servers: int, arrival_interval: Tuple[float, float], departure_interval: Tuple[float, float]):
         """
         Initializes a Queue object with the specified parameters.
         Args:
-            id (int): The unique identifier for the queue.
             capacity (int): The maximum number of items the queue can hold. Must be a positive integer.
             servers (int): The number of servers available to process items in the queue. Must be a positive integer.
             arrival_interval (Tuple[float, float]): A tuple representing the minimum and maximum time between arrivals.
@@ -30,7 +32,8 @@ class Queue:
         if arrival_interval[0] > arrival_interval[1]:      raise ValueError("arrival_interval must be in non-decreasing order")
         if departure_interval[0] > departure_interval[1]:  raise ValueError("departure_interval must be in non-decreasing order")
         
-        self.ID:                 int             = id
+        self.ID:                 int             = Queue._instances_counter
+        Queue._instances_counter += 1
         self.CAPACITY:           int             = capacity
         self.SERVERS:            int             = servers
         self.MIN_ARRIVAL_TIME:   float           = arrival_interval[0]

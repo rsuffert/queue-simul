@@ -10,20 +10,22 @@ import json
 from typing import List
 
 DEFAULT_CONFIGS: dict = {
-    "queue0": {
-        "servers": 2,
-        "capacity": 3,
-        "min_arrival_time": 1.0,
-        "max_arrival_time": 4.0,
-        "min_departure_time": 3.0,
-        "max_departure_time": 4.0
-    },
-    "queue1": {
-        "servers": 1,
-        "capacity": 5,
-        "min_departure_time": 2.0,
-        "max_departure_time": 3.0
-    },
+    "queues": [
+        {
+            "servers": 2,
+            "capacity": 3,
+            "min_arrival_time": 1.0,
+            "max_arrival_time": 4.0,
+            "min_departure_time": 3.0,
+            "max_departure_time": 4.0
+        },
+        {
+            "servers": 1,
+            "capacity": 5,
+            "min_departure_time": 2.0,
+            "max_departure_time": 3.0
+        }
+    ],
     "scheduler": {
         "init_arrival_time": 2.0,
     },
@@ -71,34 +73,26 @@ def simulation(configs_filename: str):
     
     logging.debug(f"Loaded configs:\n{json.dumps(configs, indent=4)}")
 
-    queue0_configs    = configs.get("queue0", {})
-    queue1_configs    = configs.get("queue1", {})
+    queues_configs = configs.get("queues", [])
+    for qc in queues_configs:
+        queues.append(Queue(
+            capacity=qc.get("capacity", 5),
+            servers=qc.get("servers", 2),
+            arrival_interval=(
+                qc.get("min_arrival_time", 0),
+                qc.get("max_arrival_time", 0),
+            ),
+            departure_interval=(
+                qc.get("min_departure_time", 0),
+                qc.get("max_departure_time", 0)
+            )
+        ))
+
     sched_configs     = configs.get("scheduler", {})
-    max_randoms       = configs.get("max_randoms", DEFAULT_CONFIGS["max_randoms"])
-    init_arrival_time = sched_configs.get("initial_arrival_time", DEFAULT_CONFIGS["scheduler"]["init_arrival_time"])
+    max_randoms       = configs.get("max_randoms", 100_000)
+    init_arrival_time = sched_configs.get("initial_arrival_time", 2.0)
 
     sched.schedule(Event(init_arrival_time, EventType.ARRIVAL))
-
-    q0 = Queue(
-        id=0,
-        capacity=queue0_configs.get("capacity", DEFAULT_CONFIGS["queue0"]["capacity"]),
-        servers=queue0_configs.get("servers", DEFAULT_CONFIGS["queue0"]["servers"]),
-        arrival_interval=(queue0_configs.get("min_arrival_time", DEFAULT_CONFIGS["queue0"]["min_arrival_time"]),
-                          queue0_configs.get("max_arrival_time", DEFAULT_CONFIGS["queue0"]["max_arrival_time"])),
-        departure_interval=(queue0_configs.get("min_departure_time", DEFAULT_CONFIGS["queue0"]["min_departure_time"]),
-                            queue0_configs.get("max_departure_time", DEFAULT_CONFIGS["queue0"]["max_departure_time"])),
-    )
-    q1 = Queue(
-        id=1,
-        capacity=queue1_configs.get("capacity", DEFAULT_CONFIGS["queue1"]["capacity"]),
-        servers=queue1_configs.get("servers", DEFAULT_CONFIGS["queue1"]["servers"]),
-        arrival_interval=(0.0, 0.0), # No external arrivals in queue2
-        departure_interval=(queue1_configs.get("min_departure_time", DEFAULT_CONFIGS["queue1"]["min_departure_time"]),
-                            queue1_configs.get("max_departure_time", DEFAULT_CONFIGS["queue1"]["max_departure_time"])),
-    )
-    queues.append(q0)
-    queues.append(q1)
-
     while used_randoms < max_randoms:
         current_event = sched.get_next()
         if current_event is None:
@@ -109,8 +103,8 @@ def simulation(configs_filename: str):
             case EventType.PASSAGE:   passage(current_event)
             case EventType.DEPARTURE: departure(current_event)
     
-    q0.print(global_time)
-    q1.print(global_time)
+    for q in queues:
+        q.print(global_time)
     print(f"TOTAL SIMULATION TIME: {global_time:.2f}")
 
 @validate_call
