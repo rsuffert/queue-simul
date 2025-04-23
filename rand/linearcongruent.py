@@ -80,6 +80,14 @@ class RandomGenerator:
         plt.title("Linear Congruational Generator Pseudo-Randoms")
         plt.grid(True)
         plt.show()
+    
+    def get_count(self) -> int:
+        """
+        Returns the number of random numbers generated.
+        Returns:
+            int: The number of random numbers generated.
+        """
+        return len(self.history)
 
 def main():
     parser = argparse.ArgumentParser(description="Linear Congruential Random Number Generator")

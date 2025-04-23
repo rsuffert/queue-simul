@@ -42,7 +42,6 @@ queues: List[Queue] = []
 
 rnd          = RandomGenerator()
 sched        = Scheduler()
-used_randoms = 0
 global_time  = 0.0
 
 def default_configs():
@@ -67,7 +66,7 @@ def simulation(configs_filename: str):
     Args:
         configs_filename (str): The path to the YAML configuration file.
     """
-    global queues, sched, used_randoms, global_time
+    global queues, sched, global_time
 
     if not os.path.exists(configs_filename):
         logging.error(f"File {configs_filename} not found.")
@@ -112,7 +111,7 @@ def simulation(configs_filename: str):
         target=0,
         type=EventType.ARRIVAL
     ))
-    while used_randoms < max_randoms:
+    while rnd.get_count() < max_randoms:
         current_event = sched.get_next()
         if current_event is None:
             logging.warning("Out of events! Finishing simulation...")
@@ -164,7 +163,7 @@ def departure(event: Event):
     Raises:
         ValueError: If the provided event is not of type EventType.DEPARTURE.
     """
-    global queues, sched, used_randoms, global_time
+    global queues, sched, global_time
     if event.type != EventType.DEPARTURE: raise ValueError("event must be a departure event")
 
     accumulate_time(event)
@@ -182,7 +181,6 @@ def departure(event: Event):
         target=tgt_id,
         type=EventType.DEPARTURE if tgt_id == EXTERIOR else EventType.PASSAGE
     ))
-    used_randoms += 1
 
 @validate_call
 def arrival(event: Event):
@@ -193,7 +191,7 @@ def arrival(event: Event):
     Raises:
         ValueError: If the provided event is not of type ARRIVAL.
     """
-    global queues, sched, rnd, used_randoms, global_time
+    global queues, sched, rnd, global_time
     if event.type != EventType.ARRIVAL: raise ValueError("event must be an arrival event")
     
     accumulate_time(event)
@@ -206,7 +204,6 @@ def arrival(event: Event):
         target=tgt.ID,
         type=EventType.ARRIVAL
     ))
-    used_randoms += 1
 
     # check if there is room for the new client of the current event in the target queue
     if tgt.queue_occupied >= tgt.CAPACITY:
@@ -225,7 +222,6 @@ def arrival(event: Event):
         target=next_tgt_id,
         type=EventType.DEPARTURE if next_tgt_id == EXTERIOR else EventType.PASSAGE
     ))
-    used_randoms += 1
 
 @validate_call
 def passage(event: Event):
@@ -236,7 +232,7 @@ def passage(event: Event):
     Raises:
         ValueError: If the provided event is not of type EventType.PASSAGE.
     """
-    global queues, sched, rnd, used_randoms, global_time
+    global queues, sched, rnd, global_time
     if event.type != EventType.PASSAGE: raise ValueError("event must be a passage event")
 
     accumulate_time(event)
@@ -253,7 +249,6 @@ def passage(event: Event):
             target=next_tgt_id,
             type=EventType.DEPARTURE if next_tgt_id == EXTERIOR else EventType.PASSAGE
         ))
-        used_randoms += 1
     
     # handle arrival to the target queue
     tgt = queues[event.target]
