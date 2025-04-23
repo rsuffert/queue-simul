@@ -111,7 +111,7 @@ def simulation(configs_filename: str):
         target=0,
         type=EventType.ARRIVAL
     ))
-    while rnd.get_count() < max_randoms:
+    while RandomGenerator.count < max_randoms:
         current_event = sched.get_next()
         if current_event is None:
             logging.warning("Out of events! Finishing simulation...")
@@ -139,22 +139,6 @@ def accumulate_time(event: Event):
     global_time = event.time
 
 @validate_call
-def get_target(conns: List[Connection]) -> int:
-    """
-    Tells the ID of the next queue to which the client will be routed, based on the provided connections.
-    Args:
-        conns (List[Connection]): The list of connections to choose from.
-    Returns:
-        int: The ID of the chosen target queue.
-    """
-    global rnd
-    rand = rnd.next_normalized()
-    for c in conns:
-        if rand < c.probability:
-            return c.target_id
-    return EXTERIOR
-
-@validate_call
 def departure(event: Event):
     """
     Handles a departure event in the queue simulation.
@@ -174,7 +158,7 @@ def departure(event: Event):
         return # no one is waiting to be served
     
     # someone was waiting to be served, so we schedule their next action
-    tgt_id = get_target(src.get_connections())
+    tgt_id = src.get_next_target()
     sched.schedule(Event(
         time=global_time + rnd.next_in_range(src.MIN_DEPARTURE_TIME, src.MAX_DEPARTURE_TIME),
         source=src.ID,
@@ -215,7 +199,7 @@ def arrival(event: Event):
         return # client will need to wait for the next available server
 
     # client will be served immediately, so we schedule its next action
-    next_tgt_id = get_target(tgt.get_connections())
+    next_tgt_id = tgt.get_next_target()
     sched.schedule(Event(
         time=global_time + rnd.next_in_range(tgt.MIN_DEPARTURE_TIME, tgt.MAX_DEPARTURE_TIME),
         source=tgt.ID,
@@ -242,7 +226,7 @@ def passage(event: Event):
     src.current_clients -= 1
     if src.current_clients >= src.SERVERS:
         # someone is waiting to be served in src, so we schedule their next action
-        next_tgt_id = get_target(src.get_connections())
+        next_tgt_id = src.get_next_target()
         sched.schedule(Event(
             time=global_time + rnd.next_in_range(src.MIN_DEPARTURE_TIME, src.MAX_DEPARTURE_TIME),
             source=src.ID,
@@ -257,7 +241,7 @@ def passage(event: Event):
         tgt.current_clients += 1
         if tgt.current_clients <= tgt.SERVERS:
             # client will be served immediately, so we schedule its next action
-            next_tgt_id = get_target(tgt.get_connections())
+            next_tgt_id = tgt.get_next_target()
             sched.schedule(Event(
                 time=global_time + rnd.next_in_range(tgt.MIN_DEPARTURE_TIME, tgt.MAX_DEPARTURE_TIME),
                 source=tgt.ID,

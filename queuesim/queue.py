@@ -5,6 +5,7 @@ from pydantic import validate_call
 from dataclasses import dataclass, field
 import heapq
 import copy
+from rand.linearcongruent import RandomGenerator
 
 # Represents the ID of the queue which goes to the out world
 EXTERIOR: int = -1
@@ -63,14 +64,23 @@ class Queue:
         self.states:             List[float]       = [0.0] * (capacity + 1)
         self.losses:             int               = 0
         self._connections:       List[Connection]  = []
+        self.rnd:                RandomGenerator   = RandomGenerator()
     
     @validate_call
     def add_connection(self, c: Connection):
         heapq.heappush(self._connections, c)
-    
-    @validate_call
-    def get_connections(self) -> List[Connection]:
-        return copy.deepcopy(self._connections)
+
+    def get_next_target(self) -> int:
+        """
+        Returns the ID of the next target queue based on the connection probabilities.
+        Returns:
+            int: The ID of the next target queue, or the EXTERIOR.
+        """
+        r = self.rnd.next_normalized()
+        for c in self._connections:
+            if r < c.probability:
+                return c.target_id
+        return EXTERIOR
 
     @validate_call
     def print(self, global_time: float):
