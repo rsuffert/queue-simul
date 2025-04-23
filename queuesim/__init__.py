@@ -1,1 +1,1 @@
-from .queue import Queue
+from .queue import Queue, Connection, EXTERIOR

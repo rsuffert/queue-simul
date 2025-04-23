@@ -1,4 +1,4 @@
-from queuesim import Queue
+from queuesim import Queue, Connection, EXTERIOR
 from scheduler import Scheduler, Event, EventType
 from rand.linearcongruent import RandomGenerator
 import argparse
@@ -15,7 +15,7 @@ DEFAULT_CONFIGS: dict = {
             "servers": 2,
             "capacity": 3,
             "min_arrival_time": 1.0,
-            "max_arrival_time": 4.0,
+            "max_arrival_time": 2.0,
             "min_departure_time": 3.0,
             "max_departure_time": 4.0
         },
@@ -24,12 +24,17 @@ DEFAULT_CONFIGS: dict = {
             "capacity": 5,
             "min_departure_time": 2.0,
             "max_departure_time": 3.0
+        },
+    ],
+    "network": [
+        {
+            "source": 0,
+            "target": 1,
+            "probability": 0.6
         }
     ],
-    "scheduler": {
-        "init_arrival_time": 2.0,
-    },
     "max_randoms": 100_000,
+    "init_arrival_time": 2.0
 }
 DEFAULT_CONFIGS_FILENAME: str = "configs.yaml"
 
@@ -79,20 +84,34 @@ def simulation(configs_filename: str):
             capacity=qc.get("capacity", 5),
             servers=qc.get("servers", 2),
             arrival_interval=(
-                qc.get("min_arrival_time", 0),
-                qc.get("max_arrival_time", 0),
+                qc.get("min_arrival_time", 0.0),
+                qc.get("max_arrival_time", 0.0)
             ),
             departure_interval=(
-                qc.get("min_departure_time", 0),
-                qc.get("max_departure_time", 0)
+                qc.get("min_departure_time", 0.0),
+                qc.get("max_departure_time", 0.0)
             )
         ))
 
-    sched_configs     = configs.get("scheduler", {})
-    max_randoms       = configs.get("max_randoms", 100_000)
-    init_arrival_time = sched_configs.get("initial_arrival_time", 2.0)
+    networks_configs = configs.get("network", [])
+    for nc in networks_configs:
+        source = nc.get("source", EXTERIOR)
+        target = nc.get("target", EXTERIOR)
+        probab = nc.get("probability", 0.25)
+        queues[source].add_connection(Connection(
+            target_id=target,
+            probability=probab
+        ))
 
-    sched.schedule(Event(init_arrival_time, EventType.ARRIVAL))
+    max_randoms = configs.get("max_randoms", 100_000)
+    init_arrival_time = configs.get("init_arrival_time", 0.0)
+
+    sched.schedule(Event(
+        time=init_arrival_time,
+        source=EXTERIOR,
+        target=0,
+        type=EventType.ARRIVAL
+    ))
     while used_randoms < max_randoms:
         current_event = sched.get_next()
         if current_event is None:
@@ -115,10 +134,25 @@ def accumulate_time(event: Event):
         event (Event): The event object to accumulate time for.
     """
     global queues, global_time
-    
-    queues[0].queue_states[queues[0].queue_occupied] += event.time - global_time
-    queues[1].queue_states[queues[1].queue_occupied] += event.time - global_time
+    for q in queues:
+        q.queue_states[q.queue_occupied] += event.time - global_time
     global_time = event.time
+
+@validate_call
+def get_target(conns: List[Connection]) -> int:
+    """
+    Tells the ID of the next queue to which the client will be routed, based on the provided connections.
+    Args:
+        conns (List[Connection]): The list of connections to choose from.
+    Returns:
+        int: The ID of the chosen target queue.
+    """
+    global rnd
+    rand = rnd.next_normalized()
+    for c in conns:
+        if rand < c.probability:
+            return c.target_id
+    return EXTERIOR
 
 @validate_call
 def departure(event: Event):
@@ -129,18 +163,25 @@ def departure(event: Event):
     Raises:
         ValueError: If the provided event is not of type EventType.DEPARTURE.
     """
-    global queues, sched, rnd, used_randoms, global_time
+    global queues, sched, used_randoms, global_time
     if event.type != EventType.DEPARTURE: raise ValueError("event must be a departure event")
 
     accumulate_time(event)
-    queues[1].queue_occupied -= 1
+    src = queues[event.source]
+    src.queue_occupied -= 1
 
-    if queues[1].queue_occupied >= queues[1].SERVERS:
-        sched.schedule(Event(
-            global_time + rnd.next_in_range(queues[1].MIN_DEPARTURE_TIME, queues[1].MAX_DEPARTURE_TIME),
-            EventType.DEPARTURE
-        ))
-        used_randoms += 1
+    if src.queue_occupied < src.SERVERS:
+        return # no one is waiting to be served
+    
+    # someone was waiting to be served, so we schedule their next action
+    tgt_id = get_target(src.get_connections())
+    sched.schedule(Event(
+        time=global_time + rnd.next_in_range(src.MIN_DEPARTURE_TIME, src.MAX_DEPARTURE_TIME),
+        source=src.ID,
+        target=tgt_id,
+        type=EventType.DEPARTURE if tgt_id == EXTERIOR else EventType.PASSAGE
+    ))
+    used_randoms += 1
 
 @validate_call
 def arrival(event: Event):
@@ -155,21 +196,33 @@ def arrival(event: Event):
     if event.type != EventType.ARRIVAL: raise ValueError("event must be an arrival event")
     
     accumulate_time(event)
+    tgt = queues[event.target]
 
-    if queues[0].queue_occupied < queues[0].CAPACITY:
-        queues[0].queue_occupied += 1
-        if queues[0].queue_occupied <= queues[0].SERVERS:
-            sched.schedule(Event(
-                global_time + rnd.next_in_range(queues[0].MIN_DEPARTURE_TIME, queues[0].MAX_DEPARTURE_TIME),
-                EventType.PASSAGE
-            ))
-            used_randoms += 1
-    else:
-        queues[0].losses += 1
-    
+    # schedule the next arrival to the system (so the simulation can continue)
     sched.schedule(Event(
-        global_time + rnd.next_in_range(queues[0].MIN_ARRIVAL_TIME, queues[0].MAX_ARRIVAL_TIME),
-        EventType.ARRIVAL
+        time=global_time + rnd.next_in_range(tgt.MIN_ARRIVAL_TIME, tgt.MAX_ARRIVAL_TIME),
+        source=EXTERIOR,
+        target=tgt.ID,
+        type=EventType.ARRIVAL
+    ))
+    used_randoms += 1
+
+    # check if there is room for the new client of the current event in the target queue
+    if tgt.queue_occupied >= tgt.CAPACITY:
+        tgt.losses += 1
+        return
+    tgt.queue_occupied += 1
+
+    if tgt.queue_occupied > tgt.SERVERS:
+        return # client will need to wait for the next available server
+
+    # client will be served immediately, so we schedule its next action
+    next_tgt_id = get_target(tgt.get_connections())
+    sched.schedule(Event(
+        time=global_time + rnd.next_in_range(tgt.MIN_DEPARTURE_TIME, tgt.MAX_DEPARTURE_TIME),
+        source=tgt.ID,
+        target=next_tgt_id,
+        type=EventType.DEPARTURE if next_tgt_id == EXTERIOR else EventType.PASSAGE
     ))
     used_randoms += 1
 
@@ -186,25 +239,37 @@ def passage(event: Event):
     if event.type != EventType.PASSAGE: raise ValueError("event must be a passage event")
 
     accumulate_time(event)
-    queues[0].queue_occupied -= 1
 
-    if queues[0].queue_occupied >= queues[0].SERVERS:
+    # handle departure from source queue
+    src = queues[event.source]
+    src.queue_occupied -= 1
+    if src.queue_occupied >= src.SERVERS:
+        # someone is waiting to be served in src, so we schedule their next action
+        next_tgt_id = get_target(src.get_connections())
         sched.schedule(Event(
-            global_time + rnd.next_in_range(queues[0].MIN_DEPARTURE_TIME, queues[0].MAX_DEPARTURE_TIME),
-            EventType.PASSAGE
+            time=global_time + rnd.next_in_range(src.MIN_DEPARTURE_TIME, src.MAX_DEPARTURE_TIME),
+            source=src.ID,
+            target=next_tgt_id,
+            type=EventType.DEPARTURE if next_tgt_id == EXTERIOR else EventType.PASSAGE
         ))
         used_randoms += 1
     
-    if queues[1].queue_occupied < queues[1].CAPACITY:
-        queues[1].queue_occupied += 1
-        if queues[1].queue_occupied <= queues[1].SERVERS:
+    # handle arrival to the target queue
+    tgt = queues[event.target]
+    if tgt.queue_occupied < tgt.CAPACITY:
+        # the queue is not full, so we can add the client
+        tgt.queue_occupied += 1
+        if tgt.queue_occupied <= tgt.SERVERS:
+            # client will be served immediately, so we schedule its next action
+            next_tgt_id = get_target(tgt.get_connections())
             sched.schedule(Event(
-                global_time + rnd.next_in_range(queues[1].MIN_DEPARTURE_TIME, queues[1].MAX_DEPARTURE_TIME),
-                EventType.DEPARTURE
+                time=global_time + rnd.next_in_range(tgt.MIN_DEPARTURE_TIME, tgt.MAX_DEPARTURE_TIME),
+                source=tgt.ID,
+                target=next_tgt_id,
+                type=EventType.DEPARTURE if next_tgt_id == EXTERIOR else EventType.PASSAGE
             ))
-            used_randoms += 1
     else:
-        queues[1].losses += 1
+        tgt.losses += 1
 
 def main():
     parser = argparse.ArgumentParser()
@@ -222,6 +287,7 @@ def main():
         default_configs()
     
     if args.configs_path:
+        # TODO: validate the configs file
         simulation(args.configs_path)
 
 if __name__ == "__main__":

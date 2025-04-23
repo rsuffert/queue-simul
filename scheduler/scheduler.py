@@ -20,9 +20,13 @@ class Event:
 
     Attributes:
         time (float): The time at which the event occurs.
+        source(int): The queue from which the event originates.
+        target(int): The queue that is targeted by the event
         type (EventType): The type of the event, represented as an instance of the EventType enumeration.
     """
     time: float
+    source: int = field(compare=False)
+    target: int = field(compare=False)
     type: EventType = field(compare=False)
 
 class Scheduler:

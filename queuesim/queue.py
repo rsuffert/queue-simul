@@ -2,6 +2,24 @@ from typing import Tuple, List
 from scheduler import Event, EventType
 from tabulate import tabulate
 from pydantic import validate_call
+from dataclasses import dataclass, field
+import heapq
+import copy
+
+# Represents the ID of the queue which goes to the out world
+EXTERIOR: int = -1
+
+@dataclass(order=True)
+class Connection:
+    """
+    Represents a connection to a queue to which clients can be forwarded.
+
+    Attributes:
+        target_id (int): The ID of the queue to which clients are forwarded.
+        probability (float): Probability of forwarding clients to this queue.
+    """
+    target_id: int = field(compare=False)
+    probability: float
 
 class Queue:
     """
@@ -19,9 +37,9 @@ class Queue:
             capacity (int): The maximum number of items the queue can hold. Must be a positive integer.
             servers (int): The number of servers available to process items in the queue. Must be a positive integer.
             arrival_interval (Tuple[float, float]): A tuple representing the minimum and maximum time between arrivals.
-                Must contain exactly two floats in increasing order.
+                Must contain exactly two floats in non-decreasing order.
             departure_interval (Tuple[float, float]): A tuple representing the minimum and maximum time for departures.
-                Must contain exactly two floats in increasing order.
+                Must contain exactly two floats in non-decreasing order.
         Raises:
             ValueError: If any of the arguments have invalid values (e.g., non-positive integers, invalid intervals).
         """
@@ -32,19 +50,29 @@ class Queue:
         if arrival_interval[0] > arrival_interval[1]:      raise ValueError("arrival_interval must be in non-decreasing order")
         if departure_interval[0] > departure_interval[1]:  raise ValueError("departure_interval must be in non-decreasing order")
         
-        self.ID:                 int             = Queue._instances_counter
+        self.ID: int = Queue._instances_counter
         Queue._instances_counter += 1
-        self.CAPACITY:           int             = capacity
-        self.SERVERS:            int             = servers
-        self.MIN_ARRIVAL_TIME:   float           = arrival_interval[0]
-        self.MAX_ARRIVAL_TIME:   float           = arrival_interval[1]
-        self.MIN_DEPARTURE_TIME: float           = departure_interval[0]
-        self.MAX_DEPARTURE_TIME: float           = departure_interval[1]
-        self.queue_occupied:     int             = 0
-        self.queue_states:       List[float]     = [0.0] * (capacity + 1)
-        self.losses:             int             = 0
-        self.used_randoms:       int             = 0
+
+        self.CAPACITY:           int               = capacity
+        self.SERVERS:            int               = servers
+        self.MIN_ARRIVAL_TIME:   float             = arrival_interval[0]
+        self.MAX_ARRIVAL_TIME:   float             = arrival_interval[1]
+        self.MIN_DEPARTURE_TIME: float             = departure_interval[0]
+        self.MAX_DEPARTURE_TIME: float             = departure_interval[1]
+        self.queue_occupied:     int               = 0
+        self.queue_states:       List[float]       = [0.0] * (capacity + 1)
+        self.losses:             int               = 0
+        self.used_randoms:       int               = 0
+        self._connections:       List[Connection]  = []
     
+    @validate_call
+    def add_connection(self, c: Connection):
+        heapq.heappush(self._connections, c)
+    
+    @validate_call
+    def get_connections(self) -> List[Connection]:
+        return copy.deepcopy(self._connections)
+
     @validate_call
     def print(self, global_time: float):
         headers = ["Queue Length", "Total Time", "Probability"]
