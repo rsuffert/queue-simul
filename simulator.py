@@ -122,9 +122,10 @@ def simulation(configs_filename: str):
             case EventType.PASSAGE:   passage(current_event)
             case EventType.DEPARTURE: departure(current_event)
     
+    print("\n======================== SIMULATION RESULTS ========================\n")
+    print(f"TOTAL SIMULATION TIME: {global_time:.2f}\n")
     for q in queues:
         q.print(global_time)
-    print(f"TOTAL SIMULATION TIME: {global_time:.2f}")
 
 @validate_call
 def accumulate_time(event: Event):

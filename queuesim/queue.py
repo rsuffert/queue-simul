@@ -82,7 +82,8 @@ class Queue:
             time  = f"{self.queue_states[i]:.2f}"
             prob  = f"{(self.queue_states[i] / global_time)*100:.2f}%"
             data.append([state, time, prob])
-        results  = f"------------------ QUEUE {self.ID} ------------------"
-        results += f"\n{tabulate(data, headers=headers, tablefmt='pretty')}\n"
+        results  = f"------------------ QUEUE {self.ID} ------------------\n"
+        results += f"Configuration: G/G/{self.SERVERS}/{self.CAPACITY}\n"
+        results += f"{tabulate(data, headers=headers, tablefmt='pretty')}\n"
         results += f"TOTAL LOSSES: {self.losses}\n"
         print(results)
