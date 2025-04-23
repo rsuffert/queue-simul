@@ -135,7 +135,7 @@ def accumulate_time(event: Event):
     """
     global queues, global_time
     for q in queues:
-        q.queue_states[q.queue_occupied] += event.time - global_time
+        q.states[q.current_clients] += event.time - global_time
     global_time = event.time
 
 @validate_call
@@ -168,9 +168,9 @@ def departure(event: Event):
 
     accumulate_time(event)
     src = queues[event.source]
-    src.queue_occupied -= 1
+    src.current_clients -= 1
 
-    if src.queue_occupied < src.SERVERS:
+    if src.current_clients < src.SERVERS:
         return # no one is waiting to be served
     
     # someone was waiting to be served, so we schedule their next action
@@ -206,12 +206,12 @@ def arrival(event: Event):
     ))
 
     # check if there is room for the new client of the current event in the target queue
-    if tgt.queue_occupied >= tgt.CAPACITY:
+    if tgt.current_clients >= tgt.CAPACITY:
         tgt.losses += 1
         return
-    tgt.queue_occupied += 1
+    tgt.current_clients += 1
 
-    if tgt.queue_occupied > tgt.SERVERS:
+    if tgt.current_clients > tgt.SERVERS:
         return # client will need to wait for the next available server
 
     # client will be served immediately, so we schedule its next action
@@ -239,8 +239,8 @@ def passage(event: Event):
 
     # handle departure from source queue
     src = queues[event.source]
-    src.queue_occupied -= 1
-    if src.queue_occupied >= src.SERVERS:
+    src.current_clients -= 1
+    if src.current_clients >= src.SERVERS:
         # someone is waiting to be served in src, so we schedule their next action
         next_tgt_id = get_target(src.get_connections())
         sched.schedule(Event(
@@ -252,10 +252,10 @@ def passage(event: Event):
     
     # handle arrival to the target queue
     tgt = queues[event.target]
-    if tgt.queue_occupied < tgt.CAPACITY:
+    if tgt.current_clients < tgt.CAPACITY:
         # the queue is not full, so we can add the client
-        tgt.queue_occupied += 1
-        if tgt.queue_occupied <= tgt.SERVERS:
+        tgt.current_clients += 1
+        if tgt.current_clients <= tgt.SERVERS:
             # client will be served immediately, so we schedule its next action
             next_tgt_id = get_target(tgt.get_connections())
             sched.schedule(Event(

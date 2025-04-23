@@ -59,10 +59,9 @@ class Queue:
         self.MAX_ARRIVAL_TIME:   float             = arrival_interval[1]
         self.MIN_DEPARTURE_TIME: float             = departure_interval[0]
         self.MAX_DEPARTURE_TIME: float             = departure_interval[1]
-        self.queue_occupied:     int               = 0
-        self.queue_states:       List[float]       = [0.0] * (capacity + 1)
+        self.current_clients:     int               = 0
+        self.states:             List[float]       = [0.0] * (capacity + 1)
         self.losses:             int               = 0
-        self.used_randoms:       int               = 0
         self._connections:       List[Connection]  = []
     
     @validate_call
@@ -77,10 +76,10 @@ class Queue:
     def print(self, global_time: float):
         headers = ["Queue Length", "Total Time", "Probability"]
         data = []
-        for i in range(len(self.queue_states)):
+        for i in range(len(self.states)):
             state = f"{i}"
-            time  = f"{self.queue_states[i]:.2f}"
-            prob  = f"{(self.queue_states[i] / global_time)*100:.2f}%"
+            time  = f"{self.states[i]:.2f}"
+            prob  = f"{(self.states[i] / global_time)*100:.2f}%"
             data.append([state, time, prob])
         results  = f"------------------ QUEUE {self.ID} ------------------\n"
         results += f"Configuration: G/G/{self.SERVERS}/{self.CAPACITY}\n"
