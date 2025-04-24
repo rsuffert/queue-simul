@@ -4,6 +4,35 @@ import os
 import yaml
 from typing import Dict
 
+DEFAULT_CONFIGS_FILENAME: str = "configs.yaml"
+
+DEFAULT_CONFIGS: dict = {
+    "queues": [
+        {
+            "servers": 2,
+            "capacity": 3,
+            "min_arrival_time": 1.0,
+            "max_arrival_time": 2.0,
+            "min_departure_time": 3.0,
+            "max_departure_time": 4.0
+        },
+        {
+            "servers": 1,
+            "capacity": 5,
+            "min_departure_time": 2.0,
+            "max_departure_time": 3.0
+        },
+    ],
+    "network": [
+        {
+            "source": 0,
+            "target": 1,
+            "probability": 0.6
+        }
+    ],
+    "max_randoms": 100_000,
+    "init_arrival_time": 2.0
+}
 class ConfigsValidationError(Exception):
     """
     Custom exception for configuration validation errors.
