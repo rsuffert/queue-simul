@@ -60,6 +60,7 @@ def load_and_validate_configs(configs_path: str) -> dict:
     except yaml.YAMLError as e:
         raise ConfigsValidationError(f"Error parsing YAML configuration file: {e}")
 
+    if not isinstance(configs, dict): raise ConfigsValidationError("YAML configuration file must be resolved to a dictionary")
     try:
         queues_configs = configs["queues"]
         network_configs = configs["network"]
@@ -72,6 +73,7 @@ def load_and_validate_configs(configs_path: str) -> dict:
     if not isinstance(queues_configs, list): raise ConfigsValidationError("'queues': must be a list")
     if len(queues_configs) == 0:             raise ConfigsValidationError("'queues': no queues defined in the configuration file")
     for idx, qc in enumerate(queues_configs):
+        if not isinstance(qc, dict): raise ConfigsValidationError(f"'queues[{idx}]': must be a dictionary")
         try:
             qc["servers"]
             qc["capacity"]
@@ -80,7 +82,8 @@ def load_and_validate_configs(configs_path: str) -> dict:
         except KeyError as e:
             field = str(e).strip("'")
             raise ConfigsValidationError(f"'queues[{idx}].{field}': missing required field in queue configuration")
-        # initialize with default values
+        # initialize queues that don't receive clients from thee exterior 
+        # with default values
         if not "min_arrival_time" in qc: qc["min_arrival_time"] = 0.0
         if not "max_arrival_time" in qc: qc["max_arrival_time"] = 0.0
         # (further validation on the individual queue fields can be done when instantiating the Queue objects)
@@ -88,6 +91,7 @@ def load_and_validate_configs(configs_path: str) -> dict:
     if not isinstance(network_configs, list): raise ConfigsValidationError("'network': must be a list")
     from_to_probs: Dict[int, float] = {}
     for idx, nc in enumerate(network_configs):
+        if not isinstance(nc, dict): raise ConfigsValidationError(f"'network[{idx}]': must be a dictionary")
         try:
             source = nc["source"]
             target = nc["target"]
