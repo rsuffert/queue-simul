@@ -44,12 +44,14 @@ class Queue:
         Raises:
             ValueError: If any of the arguments have invalid values (e.g., non-positive integers, invalid intervals).
         """
-        if capacity <= 0:                                  raise ValueError("capacity must be positive")
-        if servers <= 0:                                   raise ValueError("servers must be positive")
-        if len(arrival_interval) != 2:                     raise ValueError("arrival_interval must have 2 elements")
-        if len(departure_interval) != 2:                   raise ValueError("departure_interval must have 2 elements")
-        if arrival_interval[0] > arrival_interval[1]:      raise ValueError("arrival_interval must be in non-decreasing order")
-        if departure_interval[0] > departure_interval[1]:  raise ValueError("departure_interval must be in non-decreasing order")
+        if capacity <= 0:                                          raise ValueError("capacity must be positive")
+        if servers <= 0:                                           raise ValueError("servers must be positive")
+        if len(arrival_interval) != 2:                             raise ValueError("arrival_interval must have 2 elements")
+        if len(departure_interval) != 2:                           raise ValueError("departure_interval must have 2 elements")
+        if arrival_interval[0] > arrival_interval[1]:              raise ValueError("arrival_interval must be in non-decreasing order")
+        if departure_interval[0] > departure_interval[1]:          raise ValueError("departure_interval must be in non-decreasing order")
+        if arrival_interval[0] < 0 or arrival_interval[1] < 0:     raise ValueError("arrival_interval boundaries must be non-negative")
+        if departure_interval[0] < 0 or departure_interval[1] < 0: raise ValueError("departure_interval boundaries must be non-negative")
         
         self.ID: int = Queue._instances_counter
         Queue._instances_counter += 1
