@@ -7,7 +7,8 @@ import os
 from pydantic import validate_call
 import logging
 import json
-from typing import List
+from typing import List, Dict
+from configs import load_and_validate_configs
 
 DEFAULT_CONFIGS: dict = {
     "queues": [
@@ -58,60 +59,42 @@ def default_configs():
     logging.info(f"Default configurations written to the {DEFAULT_CONFIGS_FILENAME} file.")
 
 @validate_call
-def simulation(configs_filename: str):
+def simulation(configs: dict):
     """
     Simulates a queueing system based on the provided configuration file.
     It processes events until the maximum number of random events is reached or
     no more events are available.
     Args:
-        configs_filename (str): The path to the YAML configuration file.
+        configs (dict): The configuration dictionary containing queue and network settings.
     """
     global queues, sched, global_time
-
-    if not os.path.exists(configs_filename):
-        logging.error(f"File {configs_filename} not found.")
-        return
-
-    with open(configs_filename, "r") as f:
-        configs = yaml.safe_load(f)
     
-    logging.debug(f"Loaded configs:\n{json.dumps(configs, indent=4)}")
+    logging.debug(f"Simulating with configs:\n{json.dumps(configs, indent=4)}")
 
-    queues_configs = configs.get("queues", [])
-    for qc in queues_configs:
+    for qc in configs["queues"]:
         queues.append(Queue(
-            capacity=qc.get("capacity", 5),
-            servers=qc.get("servers", 2),
-            arrival_interval=(
-                qc.get("min_arrival_time", 0.0),
-                qc.get("max_arrival_time", 0.0)
-            ),
-            departure_interval=(
-                qc.get("min_departure_time", 0.0),
-                qc.get("max_departure_time", 0.0)
-            )
+            capacity=qc["capacity"],
+            servers=qc["servers"],
+            arrival_interval=(qc["min_arrival_time"], qc["max_arrival_time"]),
+            departure_interval=(qc["min_departure_time"], qc["max_departure_time"])
         ))
 
-    networks_configs = configs.get("network", [])
-    for nc in networks_configs:
-        source = nc.get("source", EXTERIOR)
-        target = nc.get("target", EXTERIOR)
-        probab = nc.get("probability", 0.25)
+    for nc in configs["network"]:
+        source = nc["source"]
+        target = nc["target"]
+        probab = nc["probability"]
         queues[source].add_connection(Connection(
             target_id=target,
             probability=probab
         ))
 
-    max_randoms = configs.get("max_randoms", 100_000)
-    init_arrival_time = configs.get("init_arrival_time", 0.0)
-
     sched.schedule(Event(
-        time=init_arrival_time,
+        time=configs["init_arrival_time"],
         source=EXTERIOR,
         target=0,
         type=EventType.ARRIVAL
     ))
-    while RandomGenerator.count < max_randoms:
+    while RandomGenerator.count < configs["max_randoms"]:
         current_event = sched.get_next()
         if current_event is None:
             logging.warning("Out of events! Finishing simulation...")
@@ -267,8 +250,8 @@ def main():
         default_configs()
     
     if args.configs_path:
-        # TODO: validate the configs file
-        simulation(args.configs_path)
+        configs = load_and_validate_configs(args.configs_path)
+        simulation(configs)
 
 if __name__ == "__main__":
     main()
