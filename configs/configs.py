@@ -7,31 +7,47 @@ from typing import Dict
 DEFAULT_CONFIGS_FILENAME: str = "configs.yaml"
 
 DEFAULT_CONFIGS: dict = {
+    "max_randoms": 100_000,
+    "init_arrival_time": 2.0,
     "queues": [
         {
             "servers": 2,
-            "capacity": 3,
-            "min_arrival_time": 1.0,
-            "max_arrival_time": 2.0,
-            "min_departure_time": 3.0,
-            "max_departure_time": 4.0
+            "capacity": 5,
+            "min_departure_time": 2.0,
+            "max_departure_time": 5.0,
+            "min_arrival_time": 1.5,
+            "max_arrival_time": 2.0
         },
         {
             "servers": 1,
-            "capacity": 5,
-            "min_departure_time": 2.0,
-            "max_departure_time": 3.0
+            "capacity": 3,
+            "min_departure_time": 3.5,
+            "max_departure_time": 5.0
         },
+        {
+            "servers": 1,
+            "capacity": 2,
+            "min_departure_time": 2.0,
+            "max_departure_time": 4.0
+        }
     ],
     "network": [
         {
             "source": 0,
             "target": 1,
+            "probability": 0.5
+        },
+        {
+            "source": 0,
+            "target": 2,
+            "probability": 0.3
+        },
+        {
+            "source": 1,
+            "target": 2,
             "probability": 0.6
         }
-    ],
-    "max_randoms": 100_000,
-    "init_arrival_time": 2.0
+    ]
 }
 class ConfigsValidationError(Exception):
     """
