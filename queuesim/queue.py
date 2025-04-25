@@ -62,15 +62,11 @@ class Queue:
         self.MAX_ARRIVAL_TIME:   float             = arrival_interval[1]
         self.MIN_DEPARTURE_TIME: float             = departure_interval[0]
         self.MAX_DEPARTURE_TIME: float             = departure_interval[1]
-        self.current_clients:     int               = 0
+        self.current_clients:    int               = 0
         self.states:             List[float]       = [0.0] * (capacity + 1)
         self.losses:             int               = 0
-        self._connections:       List[Connection]  = []
+        self.connections:        List[Connection]  = []
         self.rnd:                RandomGenerator   = RandomGenerator()
-    
-    @validate_call
-    def add_connection(self, c: Connection):
-        heapq.heappush(self._connections, c)
 
     def get_next_target(self) -> int:
         """
@@ -79,8 +75,10 @@ class Queue:
             int: The ID of the next target queue, or the EXTERIOR.
         """
         r = self.rnd.next_normalized()
-        for c in self._connections:
-            if r < c.probability:
+        prob_acc = 0.0
+        for c in self.connections:
+            prob_acc += c.probability
+            if r < prob_acc:
                 return c.target_id
         return EXTERIOR
 

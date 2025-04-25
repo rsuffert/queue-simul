@@ -54,7 +54,7 @@ def simulation(configs: dict):
         source = nc["source"]
         target = nc["target"]
         probab = nc["probability"]
-        queues[source].add_connection(Connection(
+        queues[source].connections.append(Connection(
             target_id=target,
             probability=probab
         ))
