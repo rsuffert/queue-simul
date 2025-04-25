@@ -101,7 +101,7 @@ def departure(event: Event):
     Raises:
         ValueError: If the provided event is not of type EventType.DEPARTURE.
     """
-    global queues, sched, global_time
+    global queues, rnd, sched, global_time
     if event.type != EventType.DEPARTURE: raise ValueError("event must be a departure event")
 
     accumulate_time(event)
