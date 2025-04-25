@@ -41,6 +41,14 @@ class ConfigsValidationError(Exception):
         super().__init__(message)
         self.message = message
 
+class ConfigsParsingError(Exception):
+    """
+    Custom exception for configuration parsing errors.
+    """
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
+
 @validate_call
 def load_and_validate_configs(configs_path: str) -> dict:
     """
@@ -51,14 +59,15 @@ def load_and_validate_configs(configs_path: str) -> dict:
         dict: The loaded configuration dictionary.
     Raises:
         FileNotFoundError: If the configuration file does not exist.
+        ConfigsParsingError: If the configuration file cannot be parsed from YAML into a Python dictionary.
         ConfigsValidationError: If the configuration file is invalid or cannot be parsed.
     """
     if not os.path.exists(configs_path): raise FileNotFoundError(f"Configuration file {configs_path} not found")
     try:
         with open(configs_path, "r") as f:
             configs = yaml.safe_load(f)
-    except yaml.YAMLError as e:
-        raise ConfigsValidationError(f"Error parsing YAML configuration file: {e}")
+    except Exception as e:
+        raise ConfigsParsingError(f"Error parsing configuration file from YAML into a Python dictionary: {e}")
 
     if not isinstance(configs, dict): raise ConfigsValidationError("YAML configuration file must be resolved to a dictionary")
     try:

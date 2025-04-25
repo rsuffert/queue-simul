@@ -1,1 +1,1 @@
-from .configs import load_and_validate_configs, ConfigsValidationError, DEFAULT_CONFIGS, DEFAULT_CONFIGS_FILENAME
+from .configs import load_and_validate_configs, ConfigsValidationError, ConfigsParsingError, DEFAULT_CONFIGS, DEFAULT_CONFIGS_FILENAME
