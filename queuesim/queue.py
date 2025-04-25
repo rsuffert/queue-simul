@@ -93,6 +93,9 @@ class Queue:
             data.append([state, time, prob])
         results  = f"------------------ QUEUE {self.ID} ------------------\n"
         results += f"Configuration: G/G/{self.SERVERS}/{self.CAPACITY}\n"
+        if self.MIN_ARRIVAL_TIME != 0 or self.MAX_ARRIVAL_TIME != 0:
+            results += f"Arrivals:   [{self.MIN_ARRIVAL_TIME:6.2f}, {self.MAX_ARRIVAL_TIME:6.2f}]\n"
+        results += f"Departures: [{self.MIN_DEPARTURE_TIME:6.2f}, {self.MAX_DEPARTURE_TIME:6.2f}]\n"
         results += f"{tabulate(data, headers=headers, tablefmt='pretty')}\n"
         results += f"TOTAL LOSSES: {self.losses}\n"
         print(results)
