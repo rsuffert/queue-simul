@@ -20,6 +20,7 @@ When running with the `--help` flag, you'll see that the program also supports g
 
 - Under the `queues` section, if the `capacity` is omitted, then it will default to infinity.
 - Under the `queues` section, if `min_arrival_time` and `max_arrival_time` (arrival interval to the queue) are omitted, then it is assumed that the queue doesn't receive any new clients from the exterior of the system. It can still receive clients forwarded from other queues, though.
+- Under the `network` section, if a queue has outgoing connections with probabilities that add up to less than **1.0**, the remaining probability is treated as the chance of a client **leaving the system** directly from that queue. Similarly, if a **queue has no outgoing connections defined**, it is assumed that clients **will leave the system with 100% probability** upon reaching that queue.
 
 ## Example of Execution
 
