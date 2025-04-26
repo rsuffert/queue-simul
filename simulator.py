@@ -26,7 +26,7 @@ def default_configs():
         return
 
     with open(DEFAULT_CONFIGS_FILENAME, "w") as f:
-        yaml.dump(DEFAULT_CONFIGS, f)
+        yaml.safe_dump(DEFAULT_CONFIGS, f)
 
     logging.info(f"Default configurations written to the {DEFAULT_CONFIGS_FILENAME} file.")
 
