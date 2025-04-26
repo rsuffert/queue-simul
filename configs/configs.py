@@ -1,4 +1,4 @@
-from queuesim import EXTERIOR
+from queue import EXTERIOR
 from pydantic import validate_call
 import os
 import yaml
