@@ -8,6 +8,11 @@ class RandomGenerator:
     """
     Utility class for generating pseudo-random numbers using the Linear Congruent Method (LCM).
     """
+
+    # Counter for the number of generated random numbers
+    # This is a class variable, shared across all instances of the class.
+    count: int = 0
+
     @validate_call
     def __init__(self, seed: Union[int, None] = None, M: int = 2**32, a: int = 1_664_525, c: int = 1_013_904_223):
         """
@@ -40,6 +45,7 @@ class RandomGenerator:
         """
         self.seed = (self.a * self.seed + self.c) % self.M
         self.history.append(self.seed)
+        RandomGenerator.count += 1
         return self.seed
     
     def next_normalized(self) -> float:
