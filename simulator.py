@@ -1,4 +1,5 @@
-from queue import Queue, Connection, EXTERIOR
+from queue import Queue, Connection
+from constants import EXTERIOR
 from scheduler import Scheduler, Event, EventType
 from rand.linearcongruent import RandomGenerator
 import argparse
@@ -25,7 +26,7 @@ def default_configs():
         return
 
     with open(DEFAULT_CONFIGS_FILENAME, "w") as f:
-        yaml.dump(DEFAULT_CONFIGS, f)
+        yaml.safe_dump(DEFAULT_CONFIGS, f)
 
     logging.info(f"Default configurations written to the {DEFAULT_CONFIGS_FILENAME} file.")
 
