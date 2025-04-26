@@ -1,4 +1,4 @@
-from queue import EXTERIOR
+from constants import EXTERIOR, INFINITY
 from pydantic import validate_call
 import os
 import yaml
@@ -49,6 +49,7 @@ DEFAULT_CONFIGS: dict = {
         }
     ]
 }
+
 class ConfigsValidationError(Exception):
     """
     Custom exception for configuration validation errors.
@@ -101,7 +102,6 @@ def load_and_validate_configs(configs_path: str) -> dict:
         if not isinstance(qc, dict): raise ConfigsValidationError(f"'queues[{idx}]': must be a dictionary")
         try:
             qc["servers"]
-            qc["capacity"]
             qc["min_departure_time"]
             qc["max_departure_time"]
         except KeyError as e:
@@ -111,6 +111,7 @@ def load_and_validate_configs(configs_path: str) -> dict:
         # with default values
         if not "min_arrival_time" in qc: qc["min_arrival_time"] = 0.0
         if not "max_arrival_time" in qc: qc["max_arrival_time"] = 0.0
+        if not "capacity"         in qc: qc["capacity"] = INFINITY
         # (further validation on the individual queue fields can be done when instantiating the Queue objects)
     
     if not isinstance(network_configs, list): raise ConfigsValidationError("'network': must be a list")

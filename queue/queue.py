@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 from scheduler import Event, EventType
 from tabulate import tabulate
 from pydantic import validate_call
@@ -6,9 +6,8 @@ from dataclasses import dataclass, field
 import heapq
 import copy
 from rand.linearcongruent import RandomGenerator
-
-# Represents the ID of the queue which goes to the out world
-EXTERIOR: int = -1
+from collections import defaultdict
+from constants import EXTERIOR, INFINITY
 
 @dataclass(order=True)
 class Connection:
@@ -63,7 +62,7 @@ class Queue:
         self.MIN_DEPARTURE_TIME: float             = departure_interval[0]
         self.MAX_DEPARTURE_TIME: float             = departure_interval[1]
         self.current_clients:    int               = 0
-        self.states:             List[float]       = [0.0] * (capacity + 1)
+        self.states:             Dict[int, float]  = defaultdict(float)
         self.losses:             int               = 0
         self.connections:        List[Connection]  = []
         self.rnd:                RandomGenerator   = RandomGenerator()
@@ -92,7 +91,8 @@ class Queue:
             prob  = f"{(self.states[i] / global_time)*100:.2f}%"
             data.append([state, time, prob])
         results  = f"------------------ QUEUE {self.ID} ------------------\n"
-        results += f"Configuration: G/G/{self.SERVERS}/{self.CAPACITY}\n"
+        capacity = f"/{self.CAPACITY}" if self.CAPACITY != INFINITY else ""
+        results += f"Configuration: G/G/{self.SERVERS}{capacity}\n"
         if self.MIN_ARRIVAL_TIME != 0 or self.MAX_ARRIVAL_TIME != 0:
             results += f"Arrivals:   [{self.MIN_ARRIVAL_TIME:6.2f}, {self.MAX_ARRIVAL_TIME:6.2f}]\n"
         results += f"Departures: [{self.MIN_DEPARTURE_TIME:6.2f}, {self.MAX_DEPARTURE_TIME:6.2f}]\n"
